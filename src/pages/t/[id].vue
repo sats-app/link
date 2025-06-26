@@ -13,21 +13,63 @@
             <h1 class="text-h4 font-weight-bold mb-6">
               Claim {{ tokenValue }} sat.
             </h1>
-            <v-card v-if="mintInfo" class="mx-auto mb-6" max-width="500">
-              <v-list-item>
-                <template #prepend>
-                  <v-avatar size="48">
-                    <v-img :src="mintInfo.icon_url" v-if="mintInfo.icon_url" />
-                  </v-avatar>
-                </template>
-                <v-list-item-title>{{ mintInfo.name }}</v-list-item-title>
-                <v-list-item-subtitle>{{ token?.mint }}</v-list-item-subtitle>
-              </v-list-item>
+            <v-card
+              v-if="mintInfo"
+              class="mx-auto mb-6 py-6 px-4 d-flex flex-column align-center"
+              max-width="500"
+            >
+              <v-avatar size="64" class="mb-4" v-if="mintInfo.icon_url">
+                <v-img :src="mintInfo.icon_url" />
+              </v-avatar>
+              <v-list-item-title class="text-h6 font-weight-bold mb-1">
+                {{ mintInfo.name }}
+              </v-list-item-title>
+              <v-list-item-subtitle class="mb-2">
+                {{ token?.mint }}
+              </v-list-item-subtitle>
             </v-card>
+            <v-btn
+              color="primary"
+              class="mb-3 mx-auto w-100"
+              @click="claimInApp"
+              prepend-icon="mdi-open-in-app"
+              size="large"
+            >
+              Claim in App
+            </v-btn>
+            <v-btn
+              color="primary"
+              class="mb-6 mx-auto w-100"
+              variant="outlined"
+              @click="transferNow"
+              size="large"
+            >
+              Transfer Now
+            </v-btn>
+            <v-dialog v-model="showTransfer" max-width="400">
+              <v-card>
+                <v-card-title>Transfer Token</v-card-title>
+                <v-card-text>
+                  <v-text-field v-model="invoice" label="Invoice" />
+                  <div v-if="transferError" class="text-error">
+                    {{ transferError }}
+                  </div>
+                  <div v-if="transferSuccess" class="text-success">
+                    {{ transferSuccess }}
+                  </div>
+                </v-card-text>
+                <v-card-actions>
+                  <v-btn color="primary" @click="submitTransfer"
+                    >Submit</v-btn
+                  >
+                  <v-btn text @click="backToButtons">Cancel</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
           </template>
-          <v-card class="mx-auto" max-width="500">
+          <v-card v-if="error" class="mx-auto" max-width="500">
             <v-card-text>
-              <div v-if="error" class="text-error mb-4">
+              <div class="text-error mb-4">
                 <span v-if="error === 'expired'"
                   >Token expired or not found.</span
                 >
@@ -39,35 +81,6 @@
                 >
                 <span v-else>Unknown error.</span>
               </div>
-              <template v-else-if="token">
-                <v-btn color="primary" class="mt-4" @click="claimInApp"
-                  >Claim in App</v-btn
-                >
-                <v-btn color="secondary" class="mt-4 ml-2" @click="transferNow"
-                  >Transfer</v-btn
-                >
-                <v-dialog v-model="showTransfer" max-width="400">
-                  <v-card>
-                    <v-card-title>Transfer Token</v-card-title>
-                    <v-card-text>
-                      <v-text-field v-model="invoice" label="Invoice" />
-                      <div v-if="transferError" class="text-error">
-                        {{ transferError }}
-                      </div>
-                      <div v-if="transferSuccess" class="text-success">
-                        {{ transferSuccess }}
-                      </div>
-                    </v-card-text>
-                    <v-card-actions>
-                      <v-btn color="primary" @click="submitTransfer"
-                        >Submit</v-btn
-                      >
-                      <v-btn text @click="backToButtons">Cancel</v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
-              </template>
-              <div v-else>No token data found.</div>
             </v-card-text>
           </v-card>
         </div>
@@ -77,7 +90,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import {
   type Token,
@@ -220,10 +233,14 @@ async function fetchToken() {
         .reduce((a: number, b: number) => a + b, 0);
 
       wallet.value = new CashuWallet(new CashuMint(decodedToken.mint));
-      const states = await wallet.value.checkProofsStates(decodedToken.proofs);
-      if (states.some((p) => p.state === CheckStateEnum.SPENT)) {
-        error.value = "spent";
-        return;
+      try {
+        const states = await wallet.value.checkProofsStates(decodedToken.proofs);
+        if (states.some((p) => p.state === CheckStateEnum.SPENT)) {
+          error.value = "spent";
+          return;
+        }
+      } catch (e) {
+        console.error("Error checking proofs states:", e);
       }
       await fetchMintInfo(decodedToken.mint);
     }
@@ -280,6 +297,19 @@ function backToButtons() {
   showTransfer.value = false;
   invoice.value = "";
 }
+
+watch([tokenValue, mintInfo], ([val, mint]) => {
+  if (val && mint && mint.name) {
+    let desc = `Claim ${val} sat on ${mint.name}.`;
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', desc);
+  }
+});
 
 onMounted(fetchToken);
 </script>
