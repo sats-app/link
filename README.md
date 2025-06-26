@@ -1,6 +1,6 @@
 # Sats App Link
 
-Send and receive tokens easily via a shareable link.
+Send and receive Bitcoin e-cash tokens securely and easily via a shareable link.
 
 ## Features
 - Create one-time-use links to send tokens

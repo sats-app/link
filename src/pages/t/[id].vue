@@ -298,18 +298,5 @@ function backToButtons() {
   invoice.value = "";
 }
 
-watch([tokenValue, mintInfo], ([val, mint]) => {
-  if (val && mint && mint.name) {
-    let desc = `Claim ${val} sat on ${mint.name}.`;
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'description');
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', desc);
-  }
-});
-
 onMounted(fetchToken);
 </script>
