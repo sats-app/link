@@ -9,8 +9,7 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
-    "lint": "eslint . --fix",
-    "deploy": "npm run build && aws s3 sync dist s3://sats-app-link --delete && aws amplify start-deployment --app-id d1n9tzktsg4yp9 --branch-name staging"
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "@cashu/cashu-ts": "^2.5.2",
