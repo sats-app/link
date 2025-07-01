@@ -174,6 +174,7 @@ async function fetchPaymentRequest() {
       encodedPaymentRequest.value = data["encoded"];
       let decoded = decodePaymentRequest(encodedPaymentRequest.value);
       paymentRequest.value = decoded;
+      paymentReqValue.value = decoded.amount ?? null;
       if (decoded.mints != null && decoded.mints.length > 0) {
         paymentRequestMintUrl.value = decoded.mints[0];
         await fetchMintInfo(decoded.mints[0]);
